@@ -16,6 +16,22 @@ def login_required(view):
     return wrapped
 
 
+def admin_required(view):
+    @login_required
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        from . import get_db
+
+        row = get_db().execute(
+            "SELECT is_admin FROM users WHERE id = ?", (session["user_id"],)
+        ).fetchone()
+        if row is None or not row["is_admin"]:
+            return jsonify(error="admin required"), 403
+        return view(*args, **kwargs)
+
+    return wrapped
+
+
 @bp.post("/register")
 def register():
     from . import get_db

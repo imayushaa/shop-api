@@ -42,3 +42,26 @@ def test_report_sort_rejects_unknown_columns(app):
 def test_export_runs(app):
     alice = make_user(app, "alice@example.com")
     assert alice.post("/exports").status_code == 201
+
+
+def test_admin_users_requires_admin(app):
+    assert app.test_client().get("/admin/users").status_code == 401
+    alice = make_user(app, "alice@example.com")
+    assert alice.get("/admin/users").status_code == 403
+
+
+def test_admin_users_lists_all_users(app):
+    make_user(app, "alice@example.com")
+    admin = make_user(app, "admin@example.com")
+    with app.app_context():
+        from app import get_db
+
+        db = get_db()
+        db.execute("UPDATE users SET is_admin = 1 WHERE email = ?", ("admin@example.com",))
+        db.commit()
+
+    resp = admin.get("/admin/users")
+    assert resp.status_code == 200
+    users = resp.get_json()
+    assert [u["email"] for u in users] == ["alice@example.com", "admin@example.com"]
+    assert all("password_hash" not in u for u in users)

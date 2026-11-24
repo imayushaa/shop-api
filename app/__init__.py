@@ -9,6 +9,7 @@ from .invoices import bp as invoices_bp
 from .account import bp as account_bp
 from .reports import bp as reports_bp
 from .exports import bp as exports_bp
+from .admin import bp as admin_bp
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS users (
@@ -68,7 +69,7 @@ def create_app(config=None):
         app.config.update(config)
 
     app.teardown_appcontext(close_db)
-    for bp in (auth_bp, orders_bp, invoices_bp, account_bp, reports_bp, exports_bp):
+    for bp in (auth_bp, orders_bp, invoices_bp, account_bp, reports_bp, exports_bp, admin_bp):
         app.register_blueprint(bp)
 
     init_db(app)
