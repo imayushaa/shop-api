@@ -63,6 +63,8 @@ def create_app(config=None):
         SECRET_KEY=os.environ.get("SECRET_KEY", os.urandom(32)),
         DATABASE=os.environ.get("DATABASE", "shop.db"),
         EXPORT_DIR=os.environ.get("EXPORT_DIR", "exports"),
+        # Base directory that invoices.pdf_path values are relative to.
+        INVOICE_ROOT=os.environ.get("INVOICE_ROOT", "."),
     )
     if config:
         app.config.update(config)
