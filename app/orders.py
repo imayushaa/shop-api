@@ -50,3 +50,31 @@ def get_order(order_id):
     if row is None:
         return jsonify(error="not found"), 404
     return jsonify(dict(row))
+
+
+@bp.patch("/orders/<int:order_id>")
+@login_required
+def update_order_address(order_id):
+    from . import get_db
+
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict) or set(data) != {"address"}:
+        return jsonify(error="body must be a JSON object with only 'address'"), 400
+    address = data["address"]
+    if not isinstance(address, str) or not address.strip():
+        return jsonify(error="address must be a non-empty string"), 400
+
+    db = get_db()
+    cur = db.execute(
+        "UPDATE orders SET address = ? WHERE id = ? AND user_id = ?",
+        (address.strip(), order_id, session["user_id"]),
+    )
+    if cur.rowcount == 0:
+        return jsonify(error="not found"), 404
+    db.commit()
+
+    row = db.execute(
+        "SELECT id, item, amount_pence, address, created_at FROM orders WHERE id = ?",
+        (order_id,),
+    ).fetchone()
+    return jsonify(dict(row))
