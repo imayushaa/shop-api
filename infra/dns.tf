@@ -28,3 +28,13 @@ resource "aws_route53_record" "images" {
   ttl     = 300
   records = [aws_s3_bucket_website_configuration.images.website_endpoint]
 }
+
+# Static assets. Bucket is created by the platform team's pipeline, not in this repo.
+# Do not apply before lt-demo-shop-assets-9x2v exists, or the CNAME dangles.
+resource "aws_route53_record" "assets" {
+  zone_id = var.zone_id
+  name    = "assets.shop.example.com"
+  type    = "CNAME"
+  ttl     = 300
+  records = ["lt-demo-shop-assets-9x2v.s3-website-eu-west-2.amazonaws.com"]
+}
