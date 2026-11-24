@@ -16,8 +16,8 @@ def get_invoice(invoice_id):
     row = get_db().execute(
         "SELECT i.id, i.total_pence, i.pdf_path, o.item, o.address "
         "FROM invoices i JOIN orders o ON o.id = i.order_id "
-        "WHERE i.id = ?",
-        (invoice_id,),
+        "WHERE i.id = ? AND o.user_id = ?",
+        (invoice_id, session["user_id"]),
     ).fetchone()
     if row is None:
         return jsonify(error="not found"), 404
