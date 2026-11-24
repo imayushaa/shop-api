@@ -1,16 +1,34 @@
+"""Reporting endpoints over the logged-in user's orders."""
+
 from flask import Blueprint, jsonify, request, session
+from flask.typing import ResponseReturnValue
 
 from .auth import login_required
 
 bp = Blueprint("reports", __name__)
 
-SORTABLE_COLUMNS = {"created_at", "amount_pence", "item"}
-DIRECTIONS = {"asc": "ASC", "desc": "DESC"}
+#: Columns the order report may be sorted by.
+SORTABLE_COLUMNS: set[str] = {"created_at", "amount_pence", "item"}
+#: Maps the ``dir`` query parameter (lower-cased) to an SQL sort direction.
+DIRECTIONS: dict[str, str] = {"asc": "ASC", "desc": "DESC"}
 
 
 @bp.get("/reports/orders")
 @login_required
-def order_report():
+def order_report() -> ResponseReturnValue:
+    """List the current user's orders, sorted as requested.
+
+    Query parameters:
+        sort: Column to sort by; one of :data:`SORTABLE_COLUMNS`.
+            Defaults to ``created_at``.
+        dir: ``asc`` or ``desc`` (case-insensitive). Any other value falls
+            back to ``desc``. Defaults to ``desc``.
+
+    Returns:
+        A JSON list of orders, each with ``id``, ``item``, ``amount_pence``
+        and ``created_at``, or ``{"error": "bad sort column"}`` with status
+        400 if ``sort`` is not allowed.
+    """
     from . import get_db
 
     sort = request.args.get("sort", "created_at")
