@@ -21,7 +21,7 @@ def send_mail(to, subject, body):
     server = cfg.get("MAIL_SERVER")
     if not server:
         # Never log the body: it may contain a secret such as a reset token.
-        current_app.logger.warning("MAIL_SERVER not configured; email to %s not sent", to)
+        current_app.logger.warning("MAIL_SERVER not configured; email not sent")
         return
 
     msg = EmailMessage()
