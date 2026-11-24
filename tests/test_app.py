@@ -42,3 +42,18 @@ def test_report_sort_rejects_unknown_columns(app):
 def test_export_runs(app):
     alice = make_user(app, "alice@example.com")
     assert alice.post("/exports").status_code == 201
+
+
+def test_orders_sort(app):
+    alice = make_user(app, "alice@example.com")
+    for item, amount in [("Bike", 30000), ("Apple", 50), ("Cable", 999)]:
+        alice.post("/orders", json={"item": item, "amount_pence": amount, "address": "1 Alice St"})
+
+    items = lambda resp: [o["item"] for o in resp.get_json()]
+    assert items(alice.get("/orders?sort=item")) == ["Apple", "Bike", "Cable"]
+    assert items(alice.get("/orders?sort=amount_pence&dir=desc")) == ["Bike", "Cable", "Apple"]
+    assert items(alice.get("/orders")) == ["Bike", "Apple", "Cable"]
+
+    assert alice.get("/orders?sort=address").status_code == 400
+    assert alice.get("/orders?sort=id;DROP TABLE users").status_code == 400
+    assert alice.get("/orders?sort=id&dir=sideways").status_code == 400

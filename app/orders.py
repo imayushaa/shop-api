@@ -4,6 +4,10 @@ from .auth import login_required
 
 bp = Blueprint("orders", __name__)
 
+# Column names are interpolated into SQL, so only allowlisted values may be used.
+SORTABLE_COLUMNS = {"id", "item", "amount_pence", "created_at"}
+DIRECTIONS = {"asc": "ASC", "desc": "DESC"}
+
 
 @bp.post("/orders")
 @login_required
@@ -30,10 +34,19 @@ def create_order():
 def list_orders():
     from . import get_db
 
-    rows = get_db().execute(
-        "SELECT id, item, amount_pence, created_at FROM orders WHERE user_id = ?",
-        (session["user_id"],),
-    ).fetchall()
+    query = "SELECT id, item, amount_pence, created_at FROM orders WHERE user_id = ?"
+
+    sort = request.args.get("sort")
+    if sort is not None:
+        if sort not in SORTABLE_COLUMNS:
+            return jsonify(error="bad sort column"), 400
+        direction = DIRECTIONS.get(request.args.get("dir", "asc").lower())
+        if direction is None:
+            return jsonify(error="bad sort direction"), 400
+        # id as a tiebreaker keeps ordering stable for equal values.
+        query += f" ORDER BY {sort} {direction}, id {direction}"
+
+    rows = get_db().execute(query, (session["user_id"],)).fetchall()
     return jsonify([dict(r) for r in rows])
 
 
