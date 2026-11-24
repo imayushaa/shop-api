@@ -4,6 +4,9 @@ from .auth import login_required
 
 bp = Blueprint("account", __name__)
 
+# Fields a user may change on their own account. Never include is_admin.
+EDITABLE_FIELDS = {"display_name"}
+
 
 @bp.get("/me")
 @login_required
@@ -23,13 +26,17 @@ def update_me():
     from . import get_db
 
     data = request.get_json(force=True)
+    if not isinstance(data, dict):
+        return jsonify(error="expected a JSON object"), 400
+    unknown = set(data) - EDITABLE_FIELDS
+    if unknown:
+        return jsonify(error="fields not editable", fields=sorted(unknown)), 400
+
     db = get_db()
-    for field, value in data.items():
-        if field in ("id", "password_hash"):
-            continue
+    if "display_name" in data:
         db.execute(
-            f"UPDATE users SET {field} = ? WHERE id = ?",
-            (value, session["user_id"]),
+            "UPDATE users SET display_name = ? WHERE id = ?",
+            (data["display_name"], session["user_id"]),
         )
     db.commit()
     return me()
